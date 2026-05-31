@@ -1,0 +1,15 @@
+{
+  "name": "opscrew-test-express-spike",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fake Express service with controllable latency and error spikes for OpsCrew testing.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "load": "node scripts/load-spike.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {}
+}
