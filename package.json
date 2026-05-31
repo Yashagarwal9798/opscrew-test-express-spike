@@ -9,7 +9,7 @@
     "load": "node scripts/load-spike.js"
   },
   "dependencies": {
+    "dd-trace": "^5.105.0",
     "express": "^5.2.1"
-  },
-  "devDependencies": {}
+  }
 }

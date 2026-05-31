@@ -1,3 +1,8 @@
+require('dd-trace').init({
+  logInjection: true,
+  runtimeMetrics: true,
+});
+
 const express = require('express');
 
 const app = express();
@@ -21,6 +26,7 @@ app.get('/health', (_req, res) => {
 
 app.get('/checkout', async (_req, res) => {
   requestCount += 1;
+  const started = Date.now();
 
   if (spikeMode) {
     await sleep(900);
@@ -31,6 +37,7 @@ app.get('/checkout', async (_req, res) => {
         service: 'checkout',
         route: '/checkout',
         message: 'Synthetic checkout payment timeout',
+        latencyMs: Date.now() - started,
         requestCount,
       }));
 
@@ -50,6 +57,7 @@ app.get('/checkout', async (_req, res) => {
     service: 'checkout',
     route: '/checkout',
     latencyMode: spikeMode ? 'spike' : 'normal',
+    latencyMs: Date.now() - started,
     requestCount,
   });
 });
