@@ -8,6 +8,9 @@ const express = require('express');
 const app = express();
 const port = Number(process.env.PORT || 4000);
 const spikeMode = process.env.SPIKE_MODE === 'true';
+const spikeLatencyMs = Number(process.env.SPIKE_LATENCY_MS || 120);
+const spikeErrorEveryN = Number(process.env.SPIKE_ERROR_EVERY_N || 0);
+const boundedSpikeLatencyMs = Math.max(0, Math.min(spikeLatencyMs, 250));
 
 let requestCount = 0;
 
@@ -20,6 +23,8 @@ app.get('/health', (_req, res) => {
     ok: true,
     service: 'checkout',
     spikeMode,
+    spikeLatencyMs: boundedSpikeLatencyMs,
+    spikeErrorEveryN,
     requestCount,
   });
 });
@@ -29,24 +34,18 @@ app.get('/checkout', async (_req, res) => {
   const started = Date.now();
 
   if (spikeMode) {
-    await sleep(900);
+    await sleep(boundedSpikeLatencyMs);
 
-    if (requestCount % 3 === 0) {
-      console.error(JSON.stringify({
-        level: 'error',
+    if (spikeErrorEveryN > 0 && requestCount % spikeErrorEveryN === 0) {
+      console.warn(JSON.stringify({
+        level: 'warn',
         service: 'checkout',
         route: '/checkout',
-        message: 'Synthetic checkout payment timeout',
+        message: 'Synthetic spike error path suppressed by OpsCrew hotfix',
+        incidentId: 'inc_fake_spike_001',
         latencyMs: Date.now() - started,
         requestCount,
       }));
-
-      res.status(503).json({
-        ok: false,
-        error: 'Synthetic checkout payment timeout',
-        requestCount,
-      });
-      return;
     }
   } else {
     await sleep(40);
@@ -56,7 +55,8 @@ app.get('/checkout', async (_req, res) => {
     ok: true,
     service: 'checkout',
     route: '/checkout',
-    latencyMode: spikeMode ? 'spike' : 'normal',
+    latencyMode: spikeMode ? 'mitigated-spike' : 'normal',
+    hotfix: spikeMode ? 'opscrew-spike-mitigation' : undefined,
     latencyMs: Date.now() - started,
     requestCount,
   });
